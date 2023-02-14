@@ -8,14 +8,16 @@
 clear
 
 # Yoink from UDroid
-
-DIE() { echo ""; echo -e "${@}"; exit 1 ;:; }
+DIE() { echo -e "${@}"; exit 1 ;:; }
 GWARN() { echo -e "\e[90m${*}\e[0m";:; }
 WARN() { echo -e "[WARN]: ${*}\e[0m";:; }
+
 INFO() { echo ""; echo -e "\e[32m${*}\e[0m";:; }
 nw_INFO() { echo -e "\e[32m${*}\e[0m";:; }
+
 N_INFO() { echo ""; echo -n -e "\e[32m${*}\e[0m";:; }
 Nnw_INFO() { echo -n -e "\e[32m${*}\e[0m";:; }
+
 TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
 echo ""
@@ -59,10 +61,11 @@ else
 	exit 1
 fi
 
-GPU_DRIVER_VERSION=$( vulkaninfo | grep driverVersion | cut -d ' ' -f7 )
+GPU_DRIVER_VERSION=$( vulkaninfo | grep driverVersion | cut -d ' ' -f7 | tr -d '.' )
 
+#FIXME: Add Qualcomm Version compare logic
 N_INFO "Is the GPU driver version greater than or equal to '38.1.0'? "
-if [[ "$GPU_DRIVER_VERSION" = "38.1.0" ]]; then
+if [ $GPU_DRIVER_VERSION -ge 3810 ]; then
 	echo " yes"
 	
 	DIE "GPU driver version >= 38.1.0 is unsupported!"
@@ -81,17 +84,6 @@ MAIN_FOLDER="$HOME/gpu_accel"
 mkdir -p $MAIN_FOLDER
 
 TMP_FOLDER="$MAIN_FOLDER/tmp"
-
-[ -d $TMP_FOLDER ] && {
-	INFO "The folder $TMP_FOLDER already exists do you want to re-clone the repositories? (y|n)"
-	
-	read -p "" ANSWER
-	
-	case $ANSWER in
-		y | yes ) rm -rf $TMP_FOLDER ;;
-		n | no  ) INFO "Skipping..." ;;
-	esac
-}
 
 # FIXME: Auto-extract patches and diff files.
 MESA_PATCH_FILE="$MAIN_FOLDER/mesa20230212.patch"
@@ -126,9 +118,13 @@ nw_INFO "Checking for patches and diff files..."
 	nw_INFO "All found!"
 }
 
-clear
+WARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
+
+sleep 4
 
 TITLE "AUTO INSTALLATION STARTED"
+
+clear
 
 pkg install -y x11-repo -y
 pkg install -y clang lld binutils cmake autoconf automake libtool '*ndk*' make python git libandroid-shmem-static 'vulkan*' ninja llvm bison flex libx11 xorgproto libdrm libpixman libxfixes libjpeg-turbo xtrans libxxf86vm xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama -y
@@ -136,6 +132,17 @@ pip install meson mako
 
 mkdir -p $TMP_FOLDER
 cd $TMP_FOLDER
+
+[ -d $TMP_FOLDER ] && {
+	INFO "The folder $TMP_FOLDER already exists do you want to re-clone the repositories? (y|n)"
+	
+	read -p "" ANSWER
+	
+	case $ANSWER in
+		y | yes ) rm -rf $TMP_FOLDER ;;
+		n | no  ) INFO "Skipping..." ;;
+	esac
+}
 
 LD_PRELOAD='' git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
 LD_PRELOAD='' git clone --depth 1 https://gitlab.freedesktop.org/virgl/virglrenderer.git
@@ -189,18 +196,11 @@ ninja install
 #compile virglrenderer
 cd $TMP_FOLDER/virglrenderer
 
-sed -i 's+"/tmp+"/data/data/com.termux/files/usr/tmp+' vtest/vtest_protocol.h
-sed -i -e '/uint32_t num_video_caps;/d' -e '/struct virgl_video_caps video_caps\[32\];/d' src/virgl_hw.h
-sed -i '/caps->v2.num_video_caps = 0;/d' src/vrend_renderer.c
-
 [ ! -f $VIRGL_PATCH_FILE ] && DIE "VirGL diff file not found! Try re-running the script..."
 git checkout -f master
 git apply $VIRGL_PATCH_FILE
 
-mkdir b
 cd b
-
-meson -Dbuildtype=release -Dprefix=$PREFIX -Dplatforms=egl ..
 
 rm $PREFIX/lib/libvirglrenderer*
 
