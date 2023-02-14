@@ -118,13 +118,13 @@ nw_INFO "Checking for patches and diff files..."
 	nw_INFO "All found!"
 }
 
-WARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
+echo ""
+GWARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
 
 sleep 4
+clear
 
 TITLE "AUTO INSTALLATION STARTED"
-
-clear
 
 pkg install -y x11-repo -y
 pkg install -y clang lld binutils cmake autoconf automake libtool '*ndk*' make python git libandroid-shmem-static 'vulkan*' ninja llvm bison flex libx11 xorgproto libdrm libpixman libxfixes libjpeg-turbo xtrans libxxf86vm xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama -y
