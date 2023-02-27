@@ -92,7 +92,7 @@ elif [[ $GPU_REQ_FEATURES == 5 ]]; then
 else
 	echo " no"
 	
-	DIE "Double check using 'vulkaninfo | grep VK_KHR'"
+	DIE "Double check using 'vulkaninfo | grep -oE '(VK_KHR_maintenance1|VK_KHR_create_renderpass2|VK_KHR_imageless_framebuffer|VK_KHR_descriptor_update_template|VK_KHR_timeline_semaphore|VK_EXT_transform_feedback)''"
 	exit 1
 fi
 
@@ -352,7 +352,9 @@ git apply $XSERVER_PATCH_FILE
 clear
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
-INFO_NewLineAbove "Termux-X11 is recommended when using this!"
+INFO_NoNewLineAbove "Termux-X11 is recommended when using this!"
+WARN "Don't install Xwayland when installing Termux-X11!"
+WARN "This script automatically compiles it!"
 
 WARN "DONT UPGRADE ANY OF THE BINARIES USING ANY PACKAGE MANAGER"
 WARN "OR YOU WILL NEED TO RECOMPILE AGAIN!"
