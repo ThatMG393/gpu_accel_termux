@@ -5,7 +5,7 @@
 # AUTOMATED BY Thundersnow#7929, ThatMG393
 # PATCHES MADE BY Thundersnow#7929
 
-clear
+clear -x
 
 # Possible values can only be 'enable', 'fix', and 'disable'
 # Putting another values will just disable xf86bigfont
@@ -59,13 +59,13 @@ MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' alr
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
 
 SIG_HANDLER() {
-	clear
+	clear -x
 	DIE "Immediately cancelling as the user requested..."
 }
 
 trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
 
-clear
+clear -x
 
 echo ""
 TITLE " █▀▀ █▀█ █░█     ▄▀█ █▀▀ █▀▀ █▀▀ █░   ░ ▄▀ █░█ █▀ █ █▄░█ █▀▀    ▀█ █ █▄░█ █▄▀ ▀▄  "
@@ -159,7 +159,7 @@ echo ""
 WARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
 
 sleep 4
-clear
+clear -x
 
 TITLE "AUTO INSTALLATION STARTED"
 
@@ -186,7 +186,7 @@ pkg install -y \
 INFO_NoNewLineAbove "Installing meson & mako"
 pip install meson mako 
 
-clear
+clear -x
 
 [ -d $TMP_FOLDER ] && {
 	INFO_NoNLANoNextLine "The repositories folder already exists do you want to re-clone the repositories? (y|n) "
@@ -201,7 +201,7 @@ clear
 
 CD_NO_ERR $TMP_FOLDER
 
-clear
+clear -x
 INFO_NoNewLineAbove "Cloning repositories..."
 
 INFO_NewLineAbove "Cloning 'mesa'"
@@ -224,12 +224,12 @@ INFO_NoNewLineAbove "Cloning 'xorg-server_v1.20.14'"
 git clone -q -b xorg-server-1.20.14 "https://gitlab.freedesktop.org/xorg/xserver.git"
 
 INFO_NewLineAbove "DONE!"
-clear
+clear -x
 
 # set -e # Late enable
 
 #compile libxshmfence
-clear
+clear -x
 TITLE "Compiling libxshmfence... (1/8)"
 echo ""
 
@@ -242,7 +242,7 @@ RM_SILENT $PREFIX/lib/libxshmfence*
 make -s -j8 install CPPFLAGS=-DMAXINT=INT_MAX
 
 #compile mesa
-clear
+clear -x
 TITLE "Compiling & Patching mesa... (2/8)"
 WARN "Prepare for LAG!"
 echo ""
@@ -268,7 +268,7 @@ RM_SILENT $PREFIX/lib/libgbm*
 ninja install
 
 #compile libepoxy
-clear
+clear -x
 TITLE "Compiling libepoxy... (3/8)"
 echo ""
 
@@ -284,7 +284,7 @@ RM_SILENT $PREFIX/lib/libepoxy*
 ninja install
 
 #compile virglrenderer
-clear
+clear -x
 TITLE "Compiling & Patching virglrenderer... (4/8)"
 echo ""
 
@@ -306,7 +306,7 @@ RM_SILENT $PREFIX/lib/libvirglrenderer*
 ninja install
 
 #compile wayland
-clear
+clear -x
 TITLE "Compiling wayland... (5/8)"
 echo ""
 
@@ -321,7 +321,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Ddocumentation=false -Dbuildtype=release .
 ninja install
 
 #compile wayland-protocols
-clear
+clear -x
 TITLE "Compiling wayland-protocols... (6/8)"
 echo ""
 
@@ -336,7 +336,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Dbuildtype=release ..
 ninja install
 
 #compile libsha1
-clear
+clear -x
 TITLE "Compiling libsha1... (7/8)"
 echo ""
 
@@ -348,7 +348,7 @@ RM_SILENT $PREFIX/lib/libsha1*
 make -s -j8 install
 
 #compile Xwayland
-clear
+clear -x
 TITLE "Compiling & Patching xserver... (8/8)"
 echo ""
 
@@ -371,7 +371,7 @@ git apply $XSERVER_PATCH_FILE
 	make -s -j8 install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
 }
 
-clear
+clear -x
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 INFO_NoNewLineAbove "Termux-X11 is recommended when using this!"
