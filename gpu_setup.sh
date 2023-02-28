@@ -24,22 +24,23 @@ TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
 if [ -d "/usr" ]; then DIE "Building inside a proot is not supported!"; fi
 
-DEPENDENCIES="vulkaninfo git pv"
+DEPENDENCIES="vulkaninfo git pv wget"
 
 INFO_NewLineAbove "Checking for '$DEPENDENCIES'..."
 WARN "If it hangs or takes too long, try to do it manually!"
 WARN "pkg in $DEPENDENCIES"
+
 for DEPENDENCY in $DEPENDENCIES; do
 	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
 		if [ $DEPENDENCY = "vulkaninfo" ]; then
-			pkg in vulkan-tools -y &> /dev/null && {
+			pkg in vulkan-tools -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
 			}
 		else
-			pkg in $DEPENDENCY -y &> /dev/null && {
+			pkg in $DEPENDENCY -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
@@ -52,7 +53,7 @@ done
 INFO_NewLineAbove "Done!"
 
 # Utils
-RM_SILENT() { rm -rf "${*}" &> /dev/null ;:; }
+RM_SILENT() { rm -rf "${*}"  ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
@@ -132,12 +133,12 @@ INFO_NewLineAbove "Checking for patches and diff files..."
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE &> /dev/null
+	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
 	
 	CD_NO_ERR $MAIN_FOLDER
 	# [ $( gzip -t $PATCHES_TAR_GZ && $? ) != 0 ] && {
 	[ ! -f $PATCHES_TAR_GZ ] && {
-		RM_SILENT $PATCHES_TAR_GZ &> /dev/null # Sanity check
+		RM_SILENT $PATCHES_TAR_GZ  # Sanity check
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
 			INFO_NoNewLineAbove "Success! (1/2)"
 		} || {
@@ -162,9 +163,28 @@ clear
 
 TITLE "AUTO INSTALLATION STARTED"
 
-INFO_NewLineAbove "Looking for x11-repo"; pkg install -y x11-repo -y &> /dev/null
-INFO_NoNewLineAbove "Installing build systems & binaries"; pkg install -y clang lld binutils cmake autoconf automake libtool '*ndk*' make python git libandroid-shmem-static 'vulkan*' ninja llvm bison flex libx11 xorgproto libdrm libpixman libxfixes libjpeg-turbo xtrans libxxf86vm xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama -y  &> /dev/null
-INFO_NoNewLineAbove "Installing meson & mako"; pip install meson mako &> /dev/null
+INFO_NewLineAbove "Looking for x11-repo"
+pkg install -y x11-repo -y
+
+INFO_NoNewLineAbove "Installing build systems & binaries"
+pkg install -y \
+		clang lld binutils \
+		cmake autoconf automake libtool \
+		'*ndk*' make python git \
+		libandroid-shmem-static \
+		vulkan-tools vulkan-headers vulkan-loader-android\
+		ninja llvm bison flex \
+		libx11 xorgproto libdrm \
+		libpixman libxfixes \
+		libjpeg-turbo xtrans libxxf86vm xorg-xrandr \
+		xorg-font-util xorg-util-macros libxfont2 \
+		libxkbfile libpciaccess xcb-util-renderutil \
+		xcb-util-image xcb-util-keysyms \
+		xcb-util-wm xorg-xkbcomp \
+		xkeyboard-config libxdamage libxinerama -y  
+
+INFO_NoNewLineAbove "Installing meson & mako"
+pip install meson mako 
 
 clear
 
