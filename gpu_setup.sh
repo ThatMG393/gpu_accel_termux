@@ -11,6 +11,7 @@ clear -x
 # Putting another values will just disable xf86bigfont
 USE_XF86BF="fix"
 
+# Utils / Helpers
 # Yoink from UDroid
 DIE() { echo -e "\e[1;31m${@}\e[0m"; exit 1 ;:; }
 WARN() { echo -e "\e[1;33m${*}\e[0m";:; }
@@ -22,7 +23,21 @@ INFO_NoNLANoNextLine() { echo -n -e "\e[1;32m${*}\e[0m";:; }
 
 TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
+RM_SILENT() { WARN "Removing directory: $*"; rm -rf "${*}" &> /dev/null ;:; }
+
+MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
+CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
+
+SIG_HANDLER() {
+	clear -x
+	DIE "Immediately cancelling as the user requested..."
+}
+
+trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
+
+
 if [ -d "/usr" ]; then DIE "Building inside a proot is not supported!"; fi
+
 
 DEPENDENCIES="vulkaninfo git pv wget"
 
@@ -51,19 +66,6 @@ for DEPENDENCY in $DEPENDENCIES; do
 	fi
 done
 INFO_NewLineAbove "Done!"
-
-# Utils
-RM_SILENT() { rm -rf "${*}"  ;:; }
-
-MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
-CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
-
-SIG_HANDLER() {
-	clear -x
-	DIE "Immediately cancelling as the user requested..."
-}
-
-trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
 
 clear -x
 
@@ -106,7 +108,7 @@ INFO_NLANoNextLine "Is the GPU driver version greater than or equal to '38.1.0'?
 if [ $GPU_DRIVER_VERSION -ge 3810 ]; then
 	echo " yes"
 	
-	INFO_NewLineAbove "If you GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 108, near '-ge')"
+	INFO_NoNewLineAbove "If you GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 108, near '-ge')"
 	DIE "GPU driver version >= 38.1.0 is unsupported!"
 else
 	echo " no"
