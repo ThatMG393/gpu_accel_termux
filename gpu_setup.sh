@@ -5,7 +5,7 @@
 # AUTOMATED BY Thundersnow#7929, ThatMG393
 # PATCHES MADE BY Thundersnow#7929
 
-clear
+clear -x
 
 # Possible values can only be 'enable', 'fix', and 'disable'
 # Putting another values will just disable xf86bigfont
@@ -24,22 +24,23 @@ TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
 if [ -d "/usr" ]; then DIE "Building inside a proot is not supported!"; fi
 
-DEPENDENCIES="vulkaninfo git pv"
+DEPENDENCIES="vulkaninfo git pv wget"
 
 INFO_NewLineAbove "Checking for '$DEPENDENCIES'..."
 WARN "If it hangs or takes too long, try to do it manually!"
 WARN "pkg in $DEPENDENCIES"
+
 for DEPENDENCY in $DEPENDENCIES; do
 	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
 		if [ $DEPENDENCY = "vulkaninfo" ]; then
-			pkg in vulkan-tools -y &> /dev/null && {
+			pkg in vulkan-tools -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
 			}
 		else
-			pkg in $DEPENDENCY -y &> /dev/null && {
+			pkg in $DEPENDENCY -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
@@ -52,19 +53,19 @@ done
 INFO_NewLineAbove "Done!"
 
 # Utils
-RM_SILENT() { rm -rf "${*}" &> /dev/null ;:; }
+RM_SILENT() { rm -rf "${*}"  ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
 
 SIG_HANDLER() {
-	clear
+	clear -x
 	DIE "Immediately cancelling as the user requested..."
 }
 
 trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
 
-clear
+clear -x
 
 echo ""
 TITLE " █▀▀ █▀█ █░█     ▄▀█ █▀▀ █▀▀ █▀▀ █░   ░ ▄▀ █░█ █▀ █ █▄░█ █▀▀    ▀█ █ █▄░█ █▄▀ ▀▄  "
@@ -132,12 +133,12 @@ INFO_NewLineAbove "Checking for patches and diff files..."
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE &> /dev/null
+	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
 	
 	CD_NO_ERR $MAIN_FOLDER
 	# [ $( gzip -t $PATCHES_TAR_GZ && $? ) != 0 ] && {
 	[ ! -f $PATCHES_TAR_GZ ] && {
-		RM_SILENT $PATCHES_TAR_GZ &> /dev/null # Sanity check
+		RM_SILENT $PATCHES_TAR_GZ  # Sanity check
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
 			INFO_NoNewLineAbove "Success! (1/2)"
 		} || {
@@ -158,15 +159,34 @@ echo ""
 WARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
 
 sleep 4
-clear
+clear -x
 
 TITLE "AUTO INSTALLATION STARTED"
 
-INFO_NewLineAbove "Looking for x11-repo"; pkg install -y x11-repo -y &> /dev/null
-INFO_NoNewLineAbove "Installing build systems & binaries"; pkg install -y clang lld binutils cmake autoconf automake libtool '*ndk*' make python git libandroid-shmem-static 'vulkan*' ninja llvm bison flex libx11 xorgproto libdrm libpixman libxfixes libjpeg-turbo xtrans libxxf86vm xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama -y  &> /dev/null
-INFO_NoNewLineAbove "Installing meson & mako"; pip install meson mako &> /dev/null
+INFO_NewLineAbove "Looking for x11-repo"
+pkg install -y x11-repo -y
 
-clear
+INFO_NoNewLineAbove "Installing build systems & binaries"
+pkg install -y \
+		clang lld binutils \
+		cmake autoconf automake libtool \
+		'*ndk*' make python git \
+		libandroid-shmem-static \
+		vulkan-tools vulkan-headers vulkan-loader-android\
+		ninja llvm bison flex \
+		libx11 xorgproto libdrm \
+		libpixman libxfixes \
+		libjpeg-turbo xtrans libxxf86vm xorg-xrandr \
+		xorg-font-util xorg-util-macros libxfont2 \
+		libxkbfile libpciaccess xcb-util-renderutil \
+		xcb-util-image xcb-util-keysyms \
+		xcb-util-wm xorg-xkbcomp \
+		xkeyboard-config libxdamage libxinerama -y  
+
+INFO_NoNewLineAbove "Installing meson & mako"
+pip install meson mako 
+
+clear -x
 
 [ -d $TMP_FOLDER ] && {
 	INFO_NoNLANoNextLine "The repositories folder already exists do you want to re-clone the repositories? (y|n) "
@@ -181,7 +201,7 @@ clear
 
 CD_NO_ERR $TMP_FOLDER
 
-clear
+clear -x
 INFO_NoNewLineAbove "Cloning repositories..."
 
 INFO_NewLineAbove "Cloning 'mesa'"
@@ -204,12 +224,12 @@ INFO_NoNewLineAbove "Cloning 'xorg-server_v1.20.14'"
 git clone -q -b xorg-server-1.20.14 "https://gitlab.freedesktop.org/xorg/xserver.git"
 
 INFO_NewLineAbove "DONE!"
-clear
+clear -x
 
 # set -e # Late enable
 
 #compile libxshmfence
-clear
+clear -x
 TITLE "Compiling libxshmfence... (1/8)"
 echo ""
 
@@ -222,7 +242,7 @@ RM_SILENT $PREFIX/lib/libxshmfence*
 make -s -j8 install CPPFLAGS=-DMAXINT=INT_MAX
 
 #compile mesa
-clear
+clear -x
 TITLE "Compiling & Patching mesa... (2/8)"
 WARN "Prepare for LAG!"
 echo ""
@@ -248,7 +268,7 @@ RM_SILENT $PREFIX/lib/libgbm*
 ninja install
 
 #compile libepoxy
-clear
+clear -x
 TITLE "Compiling libepoxy... (3/8)"
 echo ""
 
@@ -264,7 +284,7 @@ RM_SILENT $PREFIX/lib/libepoxy*
 ninja install
 
 #compile virglrenderer
-clear
+clear -x
 TITLE "Compiling & Patching virglrenderer... (4/8)"
 echo ""
 
@@ -286,7 +306,7 @@ RM_SILENT $PREFIX/lib/libvirglrenderer*
 ninja install
 
 #compile wayland
-clear
+clear -x
 TITLE "Compiling wayland... (5/8)"
 echo ""
 
@@ -301,7 +321,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Ddocumentation=false -Dbuildtype=release .
 ninja install
 
 #compile wayland-protocols
-clear
+clear -x
 TITLE "Compiling wayland-protocols... (6/8)"
 echo ""
 
@@ -316,7 +336,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Dbuildtype=release ..
 ninja install
 
 #compile libsha1
-clear
+clear -x
 TITLE "Compiling libsha1... (7/8)"
 echo ""
 
@@ -328,7 +348,7 @@ RM_SILENT $PREFIX/lib/libsha1*
 make -s -j8 install
 
 #compile Xwayland
-clear
+clear -x
 TITLE "Compiling & Patching xserver... (8/8)"
 echo ""
 
@@ -351,7 +371,7 @@ git apply $XSERVER_PATCH_FILE
 	make -s -j8 install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
 }
 
-clear
+clear -x
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 INFO_NoNewLineAbove "Termux-X11 is recommended when using this!"
