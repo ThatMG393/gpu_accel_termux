@@ -23,7 +23,7 @@ INFO_NoNLANoNextLine() { echo -n -e "\e[1;32m${*}\e[0m";:; }
 
 TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
-RM_SILENT() { WARN "Removing directory: $*"; rm -rf "${*}" &> /dev/null ;:; }
+RM_SILENT() { WARN "Removing: $*"; rm -rf "${*}" &> /dev/null ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
@@ -36,7 +36,7 @@ SIG_HANDLER() {
 trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
 
 
-if [ -d "/usr" ]; then DIE "Building inside a proot is not supported!"; fi
+[ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
 
 DEPENDENCIES="vulkaninfo git pv wget"
@@ -138,9 +138,10 @@ INFO_NewLineAbove "Checking for patches and diff files..."
 	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
 	
 	CD_NO_ERR $MAIN_FOLDER
+	# MAYBE: Check for script checksum, instead of presence
 	# [ $( gzip -t $PATCHES_TAR_GZ && $? ) != 0 ] && {
 	[ ! -f $PATCHES_TAR_GZ ] && {
-		RM_SILENT $PATCHES_TAR_GZ  # Sanity check
+		RM_SILENT $PATCHES_TAR_GZ  # Sanity
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
 			INFO_NoNewLineAbove "Success! (1/2)"
 		} || {
@@ -165,7 +166,7 @@ clear -x
 
 TITLE "AUTO INSTALLATION STARTED"
 
-INFO_NewLineAbove "Looking for x11-repo"
+INFO_NewLineAbove "Checking for x11-repo"
 pkg install -y x11-repo -y
 
 INFO_NoNewLineAbove "Installing build systems & binaries"
@@ -374,14 +375,15 @@ git apply $XSERVER_PATCH_FILE
 }
 
 clear -x
+
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
-INFO_NoNewLineAbove "Termux-X11 is recommended when using this!"
-WARN "Don't install Xwayland when installing Termux-X11!"
-WARN "This script automatically compiles it!"
 
-WARN "DONT UPGRADE ANY OF THE BINARIES USING ANY PACKAGE MANAGER"
-WARN "OR YOU WILL NEED TO RECOMPILE AGAIN!"
+INFO_NewLineAbove "Termux-X11 is recommended when using this!"
+WARN "Please, please, please dont upgrade any of this { xwayland }"
+WARN "Or you will encounter weird issues."
+WARN "A recompile should fix the issue (not so sure)"
 
 INFO_NewLineAbove "Script signing off..."
+
 exit 0
