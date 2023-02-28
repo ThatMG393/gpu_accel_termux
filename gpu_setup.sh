@@ -101,7 +101,7 @@ fi
 
 GPU_DRIVER_VERSION=$( vulkaninfo | grep driverVersion | cut -d ' ' -f7 | tr -d '.' )
 
-#FIXME: Add Qualcomm Version compare logic
+#FIXME: Add Qualcomm/PowerVR Version compare logic
 INFO_NLANoNextLine "Is the GPU driver version greater than or equal to '38.1.0'? "
 if [ $GPU_DRIVER_VERSION -ge 3810 ]; then
 	echo " yes"
