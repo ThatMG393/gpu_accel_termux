@@ -35,9 +35,12 @@ SIG_HANDLER() {
 
 trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
 
-
 [ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
+MAIN_FOLDER="$HOME/gpu_accel"
+MKDIR_NO_ERR $MAIN_FOLDER
+
+TMP_FOLDER="$MAIN_FOLDER/tmp"
 
 DEPENDENCIES="vulkaninfo git pv wget"
 
@@ -108,38 +111,33 @@ INFO_NLANoNextLine "Is the GPU driver version greater than or equal to '38.1.0'?
 if [ $GPU_DRIVER_VERSION -ge 3810 ]; then
 	echo " yes"
 	
-	INFO_NoNewLineAbove "If you GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 108, near '-ge')"
+	INFO_NoNewLineAbove "If you GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 111, near '-ge')"
 	DIE "GPU driver version >= 38.1.0 is unsupported!"
 else
 	echo " no"
 fi
 
-INFO_NewLineAbove "You passed the requirements, congrats! Prepare for automatic install. Please keep Termux in focus and don't close Termux..."
-
-#### MAIN LOGIC ####
-
-MAIN_FOLDER="$HOME/gpu_accel"
-MKDIR_NO_ERR $MAIN_FOLDER
-
-TMP_FOLDER="$MAIN_FOLDER/tmp"
+PATCHES_TAR_GZ="$MAIN_FOLDER/patches.tar.gz"
+PATCHES_TAR_GZ_SHA="a235584bdb71150a80639e5fb5c75b3666cf42a9c6123f85e54ba67efc79b8df"
 
 MESA_PATCH_FILE="$MAIN_FOLDER/mesa20230212.patch"
+MESA_PATCH_FILE_SHA="2f8ce934cb595e7988b9a742754b4ea54335b35451caa143ffd81332a1816c66"
 XSERVER_PATCH_FILE="$MAIN_FOLDER/xserver.patch"
+XSERVER_PATCH_FILE_SHA="bc4612d0d80876af4bbbec5270e89f80eef4a3068f6ff25f82c97da7098d3698"
 VIRGL_DIFF_FILE="$MAIN_FOLDER/virglrenderer.diff"
-
-PATCHES_TAR_GZ="$MAIN_FOLDER/patches.tar.gz"
+VIRGL_DIFF_FILE_SHA="dc9e29ca724833c7d7a1f9d1c5f32eb0d9e998aa7ae7f6656580af20509aa38f"
 
 INFO_NewLineAbove "Checking for patches and diff files..."
 
+INFO_NewLineAbove "Check for file existence..."
 [[ ! -f $MESA_PATCH_FILE || ! -f $XSERVER_PATCH_FILE || ! -f $VIRGL_DIFF_FILE ]] && {
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
+	RM_SILENT $PATCHES_TAR_GZ $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
 	
 	CD_NO_ERR $MAIN_FOLDER
-	# MAYBE: Check for script checksum, instead of presence
-	# [ $( gzip -t $PATCHES_TAR_GZ && $? ) != 0 ] && {
+	
 	[ ! -f $PATCHES_TAR_GZ ] && {
 		RM_SILENT $PATCHES_TAR_GZ  # Sanity
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
@@ -155,8 +153,38 @@ INFO_NewLineAbove "Checking for patches and diff files..."
 		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
 	}
 } || {
-	INFO_NoNewLineAbove "All found!"
+	INFO_NoNewLineAbove "Passed (1/2)!"
 }
+
+[[ "$(sha256sum $PATCHES_TAR_GZ)" != "$PATCHES_TAR_GZ_SHA" || "$(sha256sum $MESA_PATCH_FILE)" != "$MESA_PATCH_FILE_SHA" || [[ "$(sha256sum $XSERVER_PATCH_FILE)" != "$XSERVER_PATCH_FILE_SHA" || "$(sha256sum $VIRGL_DIFF_FILE)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
+	WARN "This might take a while..."
+	
+	RM_SILENT $PATCHES_TAR_GZ $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
+	
+	CD_NO_ERR $MAIN_FOLDER
+
+	[ ! -f $PATCHES_TAR_GZ ] && {
+		RM_SILENT $PATCHES_TAR_GZ  # Sanity
+		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
+			INFO_NoNewLineAbove "Success! (1/2)"
+		} || {
+			DIE "Failed to fetch 'patches.tar.gz'. Is 'wget' installed? Try doing 'yes | pkg up -y && pkg in wget -y'"
+		}
+	}
+	
+	pv -p --timer --rate --bytes $PATCHES_TAR_GZ | tar -xz && {
+		INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+	} || {
+		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+	}
+} || {
+	INFO_NoNewLineAbove "\33[2K\rPassed! (2/2)"
+}
+
+INFO_NewLineAbove "You passed the requirements, congrats! Prepare for automatic install. Please keep Termux in focus and don't close Termux..."
+
+#### MAIN LOGIC ####
 
 echo ""
 WARN "Auto compile & install is starting in 4s, interrupt (Ctrl-C) now if ran accidentally"
@@ -167,10 +195,10 @@ clear -x
 TITLE "AUTO INSTALLATION STARTED"
 
 INFO_NewLineAbove "Checking for x11-repo"
-pkg install -y x11-repo -y
+pkg install x11-repo -y
 
 INFO_NoNewLineAbove "Installing build systems & binaries"
-pkg install -y \
+pkg install \
 		clang lld binutils \
 		cmake autoconf automake libtool \
 		'*ndk*' make python git \
@@ -184,14 +212,14 @@ pkg install -y \
 		libxkbfile libpciaccess xcb-util-renderutil \
 		xcb-util-image xcb-util-keysyms \
 		xcb-util-wm xorg-xkbcomp \
-		xkeyboard-config libxdamage libxinerama -y  
+		xkeyboard-config libxdamage libxinerama -y
 
 INFO_NoNewLineAbove "Installing meson & mako"
 pip install meson mako 
 
 clear -x
 
-[ -d $TMP_FOLDER ] && {
+[ -d $TMP_FOLDER ] && (( $(ls $TMP_FOLDER | wc -l) != 0 )) && {
 	INFO_NoNLANoNextLine "The repositories folder already exists do you want to re-clone the repositories? (y|n) "
 	
 	read -p "" ANSWER
