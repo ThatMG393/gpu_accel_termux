@@ -156,7 +156,7 @@ INFO_NewLineAbove "Check for file existence..."
 	INFO_NoNewLineAbove "Passed (1/2)!"
 }
 
-[[ "$(sha256sum $PATCHES_TAR_GZ)" != "$PATCHES_TAR_GZ_SHA" || "$(sha256sum $MESA_PATCH_FILE)" != "$MESA_PATCH_FILE_SHA" || [[ "$(sha256sum $XSERVER_PATCH_FILE)" != "$XSERVER_PATCH_FILE_SHA" || "$(sha256sum $VIRGL_DIFF_FILE)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+[[ "$(sha256sum $PATCHES_TAR_GZ)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum $MESA_PATCH_FILE)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $XSERVER_PATCH_FILE)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $VIRGL_DIFF_FILE)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
