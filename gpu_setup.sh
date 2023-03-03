@@ -5,6 +5,9 @@
 # AUTOMATED BY Thundersnow#7929, ThatMG393
 # PATCHES MADE BY Thundersnow#7929
 
+export DISPLAY=:0
+export XDG_RUNTIME_DIR="$PREFIX/tmp"
+
 clear -x
 
 # Possible values can only be 'enable', 'fix', and 'disable'
@@ -52,13 +55,13 @@ for DEPENDENCY in $DEPENDENCIES; do
 	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
 		if [ $DEPENDENCY = "vulkaninfo" ]; then
-			pkg in vulkan-tools -y && {
+			pkg install vulkan-tools -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
 			}
 		else
-			pkg in $DEPENDENCY -y && {
+			pkg install $DEPENDENCY -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
 				DIE "Failed!"
@@ -156,7 +159,7 @@ INFO_NewLineAbove "Check for file existence..."
 	INFO_NoNewLineAbove "Passed (1/2)!"
 }
 
-[[ "$(sha256sum $PATCHES_TAR_GZ)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum $MESA_PATCH_FILE)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $XSERVER_PATCH_FILE)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $VIRGL_DIFF_FILE)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+[[ "$(sha256sum $PATCHES_TAR_GZ | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum $MESA_PATCH_FILE | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $XSERVER_PATCH_FILE | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $VIRGL_DIFF_FILE | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
