@@ -16,7 +16,7 @@ USE_XF86BF="fix"
 
 # Utils / Helpers
 # Yoink from UDroid
-DIE() { echo -e "\e[1;31m${@}\e[0m"; exit 1 ;:; }
+DIE() { echo -e "\e[1;31m${*}\e[0m"; exit 1 ;:; }
 WARN() { echo -e "\e[1;33m${*}\e[0m";:; }
 
 INFO_NewLineAbove() { echo ""; echo -e "\e[1;32m${*}\e[0m";:; }
@@ -36,12 +36,12 @@ SIG_HANDLER() {
 	DIE "Immediately cancelling as the user requested..."
 }
 
-trap 'SIG_HANDLER' SIGKILL SIGINT SIGTERM SIGHUP
+trap 'SIG_HANDLER' SIGINT SIGTERM SIGHUP
 
 [ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
 MAIN_FOLDER="$HOME/gpu_accel"
-MKDIR_NO_ERR $MAIN_FOLDER
+MKDIR_NO_ERR "$MAIN_FOLDER"
 
 TMP_FOLDER="$MAIN_FOLDER/tmp"
 
@@ -54,7 +54,7 @@ WARN "pkg in $DEPENDENCIES"
 for DEPENDENCY in $DEPENDENCIES; do
 	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
-		if [ $DEPENDENCY = "vulkaninfo" ]; then
+		if [ "$DEPENDENCY" = "vulkaninfo" ]; then
 			pkg install vulkan-tools -y && {
 				INFO_NoNewLineAbove "Success!" 
 			} || {
@@ -134,6 +134,8 @@ INFO_NewLineAbove "Checking for patches and diff files..."
 
 INFO_NewLineAbove "Check for file existence..."
 [[ ! -f $MESA_PATCH_FILE || ! -f $XSERVER_PATCH_FILE || ! -f $VIRGL_DIFF_FILE ]] && {
+	WARN "Files doesn't exists!"
+
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
@@ -156,19 +158,22 @@ INFO_NewLineAbove "Check for file existence..."
 		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
 	}
 } || {
-	INFO_NoNewLineAbove "Passed (1/2)!"
+	INFO_NoNewLineAbove "Passed! (1/2)"
 }
 
-[[ "$(sha256sum $PATCHES_TAR_GZ | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum $MESA_PATCH_FILE | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $XSERVER_PATCH_FILE | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum $VIRGL_DIFF_FILE | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+INFO_NewLineAbove "Checking for checksum..."
+[[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+	WARN "Checksum check failed! Re-installing"
+
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT $PATCHES_TAR_GZ $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
+	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" 
 	
-	CD_NO_ERR $MAIN_FOLDER
+	CD_NO_ERR "$MAIN_FOLDER"
 
-	[ ! -f $PATCHES_TAR_GZ ] && {
-		RM_SILENT $PATCHES_TAR_GZ  # Sanity
+	[ ! -f "$PATCHES_TAR_GZ" ] && {
+		RM_SILENT "$PATCHES_TAR_GZ"  # Sanity
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
 			INFO_NoNewLineAbove "Success! (1/2)"
 		} || {
@@ -176,7 +181,7 @@ INFO_NewLineAbove "Check for file existence..."
 		}
 	}
 	
-	pv -p --timer --rate --bytes $PATCHES_TAR_GZ | tar -xz && {
+	pv -p --timer --rate --bytes "$PATCHES_TAR_GZ" | tar -xz && {
 		INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
 	} || {
 		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
@@ -222,18 +227,18 @@ pip install meson mako
 
 clear -x
 
-[ -d $TMP_FOLDER ] && (( $(ls $TMP_FOLDER | wc -l) != 0 )) && {
+[ -d "$TMP_FOLDER" ] && (( $(ls "$TMP_FOLDER" | wc -l) != 0 )) && {
 	INFO_NoNLANoNextLine "The repositories folder already exists do you want to re-clone the repositories? (y|n) "
 	
 	read -p "" ANSWER
 	
 	case $ANSWER in
-		y | Y | yes ) RM_SILENT $TMP_FOLDER ;;
+		y | Y | yes ) RM_SILENT "$TMP_FOLDER" ;;
 		n | N | no  ) INFO_NewLineAbove "Skipping..." ;;
 	esac
 }
 
-CD_NO_ERR $TMP_FOLDER
+CD_NO_ERR "$TMP_FOLDER"
 
 clear -x
 INFO_NoNewLineAbove "Cloning repositories..."
@@ -276,33 +281,39 @@ RM_SILENT $PREFIX/lib/libxshmfence*
 make -s -j8 install CPPFLAGS=-DMAXINT=INT_MAX
 
 #compile mesa
-clear -x
+# clear -x
 TITLE "Compiling & Patching mesa... (2/8)"
 WARN "Prepare for LAG!"
 echo ""
 
 cd $TMP_FOLDER/mesa
-[ ! -f $MESA_PATCH_FILE ] && {
+[ ! -f "$MESA_PATCH_FILE" ] && {
 	DIE "Mesa patch file not found! Try re-running the script..."
 }
 git checkout -f main
-git apply $MESA_PATCH_FILE
+git apply --reject "$MESA_PATCH_FILE"
 
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
-LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
+LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=enabled -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
 
-RM_SILENT $PREFIX/lib/libglapi.so*
-RM_SILENT $PREFIX/lib/libGL.so*
-RM_SILENT $PREFIX/lib/libGLES*
+RM_SILENT $PREFIX/lib/libglapi*
+RM_SILENT $PREFIX/lib/libGL*
 RM_SILENT $PREFIX/lib/libEGL*
 RM_SILENT $PREFIX/lib/libgbm*
+# RM_SILENT $PREFIX/lib/dri
 
 ninja install
 
+CD_NO_ERR ../bin
+python3 install_megadrivers.py \
+	$TMP_FOLDER/mesa/b/src/gallium/targets/dri/libgallium_dri.so \
+	/data/data/com.termux/files/usr/lib/dri \
+	swrast_dri.so kms_swrast_dri.so zink_dri.so
+
 #compile libepoxy
-clear -x
+# clear -x
 TITLE "Compiling libepoxy... (3/8)"
 echo ""
 
@@ -318,17 +329,17 @@ RM_SILENT $PREFIX/lib/libepoxy*
 ninja install
 
 #compile virglrenderer
-clear -x
+# clear -x
 TITLE "Compiling & Patching virglrenderer... (4/8)"
 echo ""
 
 cd $TMP_FOLDER/virglrenderer
 
-[ ! -f $VIRGL_PATCH_FILE ] && {
+[ ! -f "$VIRGL_DIFF_FILE" ] && {
 	DIE "VirGL diff file not found! Try re-running the script..."
 }
 git checkout -f master
-git apply $VIRGL_DIFF_FILE
+git apply "$VIRGL_DIFF_FILE"
 
 MKDIR_NO_ERR b
 CD_NO_ERR b
@@ -359,7 +370,7 @@ clear -x
 TITLE "Compiling wayland-protocols... (6/8)"
 echo ""
 
-RM_SILENT /data/data/com.termux/files/usr/lib/pkgconfig/wayland-protocols.pc
+RM_SILENT $PREFIX/lib/pkgconfig/wayland-protocols.pc
 
 cd $TMP_FOLDER/wayland-protocols
 
@@ -387,17 +398,19 @@ TITLE "Compiling & Patching xserver... (8/8)"
 echo ""
 
 cd $TMP_FOLDER/xserver
-[ ! -f $XSERVER_PATCH_FILE ] && {
+[ ! -f "$XSERVER_PATCH_FILE" ] && {
 	DIE "xserver patch file not found! Try re-running the script..."
 }
 git checkout -f master
-git apply $XSERVER_PATCH_FILE
+git apply "$XSERVER_PATCH_FILE"
 
 [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
 	./autogen.sh --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 } || {
 	./autogen.sh --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 }
+
+RM_SILENT $PREFIX/lib/libX*
 
 [ "$USE_XF86BF" = "fix" ] && {
 	make -s -j8 install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
@@ -411,7 +424,7 @@ TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 
 INFO_NewLineAbove "Termux-X11 is recommended when using this!"
-WARN "Please, please, please dont upgrade any of this { xwayland }"
+WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa }"
 WARN "Or you will encounter weird issues."
 WARN "A recompile should fix the issue (not so sure)"
 
