@@ -58,7 +58,7 @@ WARN "If it hangs or takes too long, try to do it manually!"
 WARN "pkg in $DEPENDENCIES"
 
 for DEPENDENCY in $DEPENDENCIES; do
-	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help | grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
+	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
 		if [ "$DEPENDENCY" = "vulkaninfo" ]; then
 			pkg install vulkan-tools -y && {
