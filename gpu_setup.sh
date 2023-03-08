@@ -251,7 +251,7 @@ INFO_NoNewLineAbove "Cloning repositories..."
 
 INFO_NewLineAbove "Cloning 'mesa'"
 WARN "This repository takes very long to clone, don't panic!"
-git clone "https://gitlab.freedesktop.org/mesa/mesa.git"
+git clone -q "https://gitlab.freedesktop.org/mesa/mesa.git"
 INFO_NoNewLineAbove "Cloning 'virglrenderer'"
 git clone -q "https://gitlab.freedesktop.org/virgl/virglrenderer.git"
 
