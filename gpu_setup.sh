@@ -10,13 +10,15 @@ export XDG_RUNTIME_DIR="$PREFIX/tmp"
 
 clear -x
 
+CORES="$(nproc)"
+
 # Possible values can only be 'enable', 'fix', and 'disable'
 # Putting another values will just disable xf86bigfont
 USE_XF86BF="fix"
 
 # Possible values can only be 'yes' and 'no'
-# Putting another values will just disable the checkout command
-CHECKOUT_XSERVER="no"
+# Putting another values will just disable the DRI3 feature
+ENABLE_DRI3="no"
 
 # Utils / Helpers
 # Yoink from UDroid
@@ -40,7 +42,7 @@ SIG_HANDLER() {
 	DIE "Immediately cancelling as the user requested..."
 }
 
-trap 'SIG_HANDLER' SIGINT SIGTERM SIGHUP
+trap 'SIG_HANDLER' TERM HUP
 
 [ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
@@ -56,7 +58,7 @@ WARN "If it hangs or takes too long, try to do it manually!"
 WARN "pkg in $DEPENDENCIES"
 
 for DEPENDENCY in $DEPENDENCIES; do
-	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help |& grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
+	if [[ ! -n $(command -v $DEPENDENCY) || $( $DEPENDENCY --help | grep "(No such file or directory|Command not found)" | wc -l ) == 1 ]]; then
 		INFO_NewLineAbove "Downloading '$DEPENDENCY'..."
 		if [ "$DEPENDENCY" = "vulkaninfo" ]; then
 			pkg install vulkan-tools -y && {
@@ -282,7 +284,7 @@ sed -i s/values.h/limits.h/ ./src/xshmfence_futex.h
 RM_SILENT $PREFIX/lib/libxshmfence*
 
 ./autogen.sh --prefix=$PREFIX --with-shared-memory-dir=$TMPDIR
-make -s -j8 install CPPFLAGS=-DMAXINT=INT_MAX
+make -s -j${CORES} install CPPFLAGS=-DMAXINT=INT_MAX
 
 #compile mesa
 # clear -x
@@ -300,7 +302,11 @@ git apply --reject "$MESA_PATCH_FILE"
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
-LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=true -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
+[ "$ENABLE_DRI3" = "yes" ] && {
+	LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=true -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
+} || {
+	LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
+}
 
 RM_SILENT $PREFIX/lib/libglapi*
 RM_SILENT $PREFIX/lib/libGL*
@@ -394,7 +400,7 @@ cd $TMP_FOLDER/libsha1
 RM_SILENT $PREFIX/lib/libsha1*
 
 ./autogen.sh --prefix=$PREFIX
-make -s -j8 install
+make -s -j${CORES} install
 
 #compile Xwayland
 clear -x
@@ -406,26 +412,33 @@ cd $TMP_FOLDER/xserver
 	DIE "xserver patch file not found! Try re-running the script..."
 }
 
-[ "$CHECKOUT_XSERVER" = "yes" ] && {
-	git checkout -f master
-}
+git checkout -f "xorg-server-1.20.14"
 git apply "$XSERVER_PATCH_FILE"
 
+
 [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
-	./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	[ "$ENABLE_DRI3" = "yes" ] && {
+		./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	} || {
+		./autogen.sh --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	}
 } || {
-	./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	[ "$ENABLE_DRI3" = "yes" ] && {
+		./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	} || {
+		./autogen.sh --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	}
 }
 
 RM_SILENT $PREFIX/lib/libX*
 
 [ "$USE_XF86BF" = "fix" ] && {
-	make -s -j8 install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
+	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
 } || {
-	make -s -j8 install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
+	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
 }
 
-clear -x
+# clear -x
 
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
