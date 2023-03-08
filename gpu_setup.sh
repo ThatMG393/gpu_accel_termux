@@ -14,6 +14,10 @@ clear -x
 # Putting another values will just disable xf86bigfont
 USE_XF86BF="fix"
 
+# Possible values can only be 'yes' and 'no'
+# Putting another values will just disable the checkout command
+CHECKOUT_XSERVER="no"
+
 # Utils / Helpers
 # Yoink from UDroid
 DIE() { echo -e "\e[1;31m${*}\e[0m"; exit 1 ;:; }
@@ -114,7 +118,7 @@ INFO_NLANoNextLine "Is the GPU driver version greater than or equal to '38.1.0'?
 if [ $GPU_DRIVER_VERSION -ge 3810 ]; then
 	echo " yes"
 	
-	INFO_NoNewLineAbove "If you GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 111, near '-ge')"
+	INFO_NoNewLineAbove "If your GPU Model is made by Qualcomm or PowerVR then try to increase the '3810' in the script. (Line 111, near '-ge')"
 	DIE "GPU driver version >= 38.1.0 is unsupported!"
 else
 	echo " no"
@@ -296,7 +300,7 @@ git apply --reject "$MESA_PATCH_FILE"
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
-LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=enabled -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
+LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=true -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
 
 RM_SILENT $PREFIX/lib/libglapi*
 RM_SILENT $PREFIX/lib/libGL*
@@ -401,13 +405,16 @@ cd $TMP_FOLDER/xserver
 [ ! -f "$XSERVER_PATCH_FILE" ] && {
 	DIE "xserver patch file not found! Try re-running the script..."
 }
-git checkout -f master
+
+[ "$CHECKOUT_XSERVER" = "yes" ] && {
+	git checkout -f master
+}
 git apply "$XSERVER_PATCH_FILE"
 
 [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
-	./autogen.sh --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 } || {
-	./autogen.sh --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
+	./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 }
 
 RM_SILENT $PREFIX/lib/libX*
