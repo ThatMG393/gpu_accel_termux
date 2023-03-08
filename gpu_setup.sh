@@ -438,7 +438,7 @@ RM_SILENT $PREFIX/lib/libX*
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
 }
 
-# clear -x
+clear -x
 
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
