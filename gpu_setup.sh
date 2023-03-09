@@ -413,7 +413,7 @@ cd $TMP_FOLDER/xserver
 }
 
 git checkout -f "xorg-server-1.20.14"
-git apply "$XSERVER_PATCH_FILE"
+git apply --reject "$XSERVER_PATCH_FILE"
 
 
 [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
@@ -444,7 +444,7 @@ TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 
 INFO_NewLineAbove "Termux-X11 is recommended when using this!"
-WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa }"
+WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa, virglrenderer }"
 WARN "Or you will encounter weird issues."
 WARN "A recompile should fix the issue (not so sure)"
 
