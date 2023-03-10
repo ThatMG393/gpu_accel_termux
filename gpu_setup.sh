@@ -460,7 +460,7 @@ TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 
 INFO_NewLineAbove "Termux-X11 is recommended when using this!"
-WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa, virglrenderer, xorg-server }"
+WARN "Please, please, please dont upgrade all of the packages that has been compiled"
 WARN "Or you will encounter weird issues."
 WARN "A recompile should fix the issue (not so sure)"
 
