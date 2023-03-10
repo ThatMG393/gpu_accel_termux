@@ -32,6 +32,8 @@ INFO_NoNLANoNextLine() { echo -n -e "\e[1;32m${*}\e[0m";:; }
 
 TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
+[ -d "/usr" ] && DIE "Building inside a proot is not supported!"
+
 RM_SILENT() { WARN "Removing: $*"; rm -rf "${*}" &> /dev/null ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
@@ -45,8 +47,6 @@ SIG_HANDLER() {
 }
 
 trap 'SIG_HANDLER' TERM HUP
-
-[ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
 MAIN_FOLDER="$HOME/gpu_accel"
 MKDIR_NO_ERR "$MAIN_FOLDER"
