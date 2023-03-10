@@ -10,7 +10,8 @@ export XDG_RUNTIME_DIR="$PREFIX/tmp"
 
 clear -x
 
-CORES="$(nproc)"
+# Might go below 2 or 1
+CORES="$(( $(nproc)-2 ))"
 
 # Possible values can only be 'enable', 'fix', and 'disable'
 # Putting another values will just disable xf86bigfont
