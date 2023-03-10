@@ -152,7 +152,7 @@ VIRGL_PATCH_FILE_SHA="4416db69f777c7b5cb95c1381ab094787d101351643c48935bb9f771bf
 INFO_NewLineAbove "Checking for patches and diff files..."
 
 INFO_NewLineAbove "Check for file existence..."
-[[ ! -f "$MESA_PATCH_FILE" || ! -f "$XSERVER_PATCH_FILE" || ! -f "$VIRGL_DIFF_FILE" || -f "$VIRGL_PATCH_FILE" ]] && {
+if [[ ! -f "$MESA_PATCH_FILE" || ! -f "$XSERVER_PATCH_FILE" || ! -f "$VIRGL_DIFF_FILE" || ! -f "$VIRGL_PATCH_FILE" ]]; then
 	WARN "Files doesn't exists!"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
@@ -169,19 +169,25 @@ INFO_NewLineAbove "Check for file existence..."
 		} || {
 			DIE "Failed to fetch 'patches.tar.gz'. Is 'wget' installed? Try doing 'yes | pkg up -y && pkg in wget -y'"
 		}
-	}
-	
-	pv -p --timer --rate --bytes $PATCHES_TAR_GZ | tar -xz && {
-		INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		
+		tar -xvf $PATCHES_TAR_GZ && {
+			INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		} || {
+			DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		}
 	} || {
-		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		tar -xvf $PATCHES_TAR_GZ && {
+			INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		} || {
+			DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		}
 	}
-} || {
+else
 	INFO_NoNewLineAbove "Passed! (1/2)"
-}
+fi
 
 INFO_NewLineAbove "Checking for checksum..."
-[[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_PATCH_FILE" | cut -d' ' -f1)" != "$VIRGL_PATCH_FILE_SHA" ]] && {
+if [[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_PATCH_FILE" | cut -d' ' -f1)" != "$VIRGL_PATCH_FILE_SHA" ]]; then
 	WARN "Checksum check failed! Re-installing"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
@@ -198,16 +204,22 @@ INFO_NewLineAbove "Checking for checksum..."
 		} || {
 			DIE "Failed to fetch 'patches.tar.gz'. Is 'wget' installed? Try doing 'yes | pkg up -y && pkg in wget -y'"
 		}
-	}
-	
-	pv -p --timer --rate --bytes $PATCHES_TAR_GZ | tar -xz && {
-		INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		
+		tar -xvf $PATCHES_TAR_GZ && {
+			INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		} || {
+			DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		}
 	} || {
-		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		tar -xvf $PATCHES_TAR_GZ && {
+			INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
+		} || {
+			DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
+		}
 	}
-} || {
+else
 	INFO_NoNewLineAbove "\33[2K\rPassed! (2/2)"
-}
+fi
 
 INFO_NewLineAbove "You passed the requirements, congrats! Prepare for automatic install. Please keep Termux in focus and don't close Termux..."
 
