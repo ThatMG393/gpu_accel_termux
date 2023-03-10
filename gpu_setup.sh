@@ -130,30 +130,40 @@ else
 fi
 
 PATCHES_TAR_GZ="$MAIN_FOLDER/patches.tar.gz"
-PATCHES_TAR_GZ_SHA="a235584bdb71150a80639e5fb5c75b3666cf42a9c6123f85e54ba67efc79b8df"
+PATCHES_TAR_GZ_SHA="8d91834d03a16075ce2f45751636f0f2118f99cfa913ceb2d692986a10b4a679"
 
+# Source:
+# Thundersnow#7929
 MESA_PATCH_FILE="$MAIN_FOLDER/mesa20230212.patch"
 MESA_PATCH_FILE_SHA="2f8ce934cb595e7988b9a742754b4ea54335b35451caa143ffd81332a1816c66"
 XSERVER_PATCH_FILE="$MAIN_FOLDER/xserver.patch"
 XSERVER_PATCH_FILE_SHA="bc4612d0d80876af4bbbec5270e89f80eef4a3068f6ff25f82c97da7098d3698"
 VIRGL_DIFF_FILE="$MAIN_FOLDER/virglrenderer.diff"
 VIRGL_DIFF_FILE_SHA="dc9e29ca724833c7d7a1f9d1c5f32eb0d9e998aa7ae7f6656580af20509aa38f"
+# -------
+
+# Source:
+# https://github.com/termux/termux-packages/issues/14517#issuecomment-1460322675
+VIRGL_PATCH_FILE="$MAIN_FOLDER/virglrenderer.patch"
+VIRGL_PATCH_FILE_SHA="4416db69f777c7b5cb95c1381ab094787d101351643c48935bb9f771bfc944c9"
+# Thanks to Twaik Yont for letting me use his patch!
+# https://github.com/Twaik
 
 INFO_NewLineAbove "Checking for patches and diff files..."
 
 INFO_NewLineAbove "Check for file existence..."
-[[ ! -f $MESA_PATCH_FILE || ! -f $XSERVER_PATCH_FILE || ! -f $VIRGL_DIFF_FILE ]] && {
+[[ ! -f "$MESA_PATCH_FILE" || ! -f "$XSERVER_PATCH_FILE" || ! -f "$VIRGL_DIFF_FILE" || -f "$VIRGL_PATCH_FILE" ]] && {
 	WARN "Files doesn't exists!"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT $PATCHES_TAR_GZ $MESA_PATCH_FILE $XSERVER_PATCH_FILE $VIRGL_DIFF_FILE 
+	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" "$VIRGL_PATCH_FILE"
 	
-	CD_NO_ERR $MAIN_FOLDER
+	CD_NO_ERR "$MAIN_FOLDER"
 	
-	[ ! -f $PATCHES_TAR_GZ ] && {
-		RM_SILENT $PATCHES_TAR_GZ  # Sanity
+	[ ! -f "$PATCHES_TAR_GZ" ] && {
+		RM_SILENT "$PATCHES_TAR_GZ"  # Sanity
 		wget -q --show-progress --progress=bar:force https://raw.githubusercontent.com/ThatMG393/gpu_accel_termux/master/patches.tar.gz 2>&1 && {
 			INFO_NoNewLineAbove "Success! (1/2)"
 		} || {
@@ -171,13 +181,13 @@ INFO_NewLineAbove "Check for file existence..."
 }
 
 INFO_NewLineAbove "Checking for checksum..."
-[[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] && {
+[[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_PATCH_FILE" | cut -d' ' -f1)" != "$VIRGL_PATCH_FILE_SHA" ]] && {
 	WARN "Checksum check failed! Re-installing"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" 
+	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" "$VIRGL_PATCH_FILE"
 	
 	CD_NO_ERR "$MAIN_FOLDER"
 
@@ -190,7 +200,7 @@ INFO_NewLineAbove "Checking for checksum..."
 		}
 	}
 	
-	pv -p --timer --rate --bytes "$PATCHES_TAR_GZ" | tar -xz && {
+	pv -p --timer --rate --bytes $PATCHES_TAR_GZ | tar -xz && {
 		INFO_NoNewLineAbove "\33[2K\rSuccess! (2/2)"
 	} || {
 		DIE "Failed to extract 'patches.tar.gz'. Is 'wget' and 'tar' installed? Try re-running the script."
@@ -350,11 +360,17 @@ echo ""
 
 cd $TMP_FOLDER/virglrenderer
 
+git checkout -f master
 [ ! -f "$VIRGL_DIFF_FILE" ] && {
 	DIE "VirGL diff file not found! Try re-running the script..."
 }
-git checkout -f master
 git apply "$VIRGL_DIFF_FILE"
+
+[ ! -f "$VIRGL_PATCH_FILE" ] && {
+	WARN "VirGL patch file not found! Try re-running the script..."
+} || {
+	git apply "$VIRGL_PATCH_FILE"
+}
 
 MKDIR_NO_ERR b
 CD_NO_ERR b
