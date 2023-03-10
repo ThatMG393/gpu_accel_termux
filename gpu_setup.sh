@@ -37,6 +37,12 @@ RM_SILENT() { WARN "Removing: $*"; rm -rf "${*}" &> /dev/null ;:; }
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
 
+CLONE() {
+	repo=$1
+	branch=$2
+	depth=$3
+}
+
 SIG_HANDLER() {
 	clear -x
 	DIE "Immediately cancelling as the user requested..."
@@ -251,22 +257,23 @@ INFO_NoNewLineAbove "Cloning repositories..."
 
 INFO_NewLineAbove "Cloning 'mesa'"
 WARN "This repository takes very long to clone, don't panic!"
-git clone -q "https://gitlab.freedesktop.org/mesa/mesa.git"
+git clone --depth 1 -q "https://gitlab.freedesktop.org/mesa/mesa.git"
 INFO_NoNewLineAbove "Cloning 'virglrenderer'"
-git clone -q "https://gitlab.freedesktop.org/virgl/virglrenderer.git"
+git clone --depth 1 -q "https://gitlab.freedesktop.org/virgl/virglrenderer.git"
 
-INFO_NoNewLineAbove "Cloning 'libxshmfence_v1.3'"
-git clone -q -b libxshmfence-1.3 "https://gitlab.freedesktop.org/xorg/lib/libxshmfence.git"
-INFO_NoNewLineAbove "Cloning 'libepoxy_v1.5.10'"
-git clone -q -b 1.5.10 "https://github.com/anholt/libepoxy.git"
-INFO_NoNewLineAbove "Cloning 'wayland_v1.21.0'"
-git clone -q -b 1.21.0 "https://gitlab.freedesktop.org/wayland/wayland.git"
-INFO_NoNewLineAbove "Cloning 'wayland-protocols_v1.26'"
-git clone -q -b 1.26 "https://gitlab.freedesktop.org/wayland/wayland-protocols.git"
-INFO_NoNewLineAbove "Cloning 'libsha1_v0.3'"
-git clone -q -b 0.3 "https://github.com/dottedmag/libsha1.git"
-INFO_NoNewLineAbove "Cloning 'xorg-server_v1.20.14'"
-git clone -q -b xorg-server-1.20.14 "https://gitlab.freedesktop.org/xorg/xserver.git"
+INFO_NoNewLineAbove "Cloning 'libxshmfence'"
+git clone --depth 1 "https://gitlab.freedesktop.org/xorg/lib/libxshmfence.git"
+INFO_NoNewLineAbove "Cloning 'libepoxy'"
+git clone --depth 1 -q "https://github.com/anholt/libepoxy.git"
+INFO_NoNewLineAbove "Cloning 'wayland'"
+git clone --depth 1 -q "https://gitlab.freedesktop.org/wayland/wayland.git"
+INFO_NoNewLineAbove "Cloning 'wayland-protocols'"
+git clone --depth 1 -q "https://gitlab.freedesktop.org/wayland/wayland-protocols.git"
+INFO_NoNewLineAbove "Cloning 'libsha1'"
+git clone --depth 1 -q "https://github.com/dottedmag/libsha1.git"
+INFO_NoNewLineAbove "Cloning 'xorg-server_v21.1.7'"
+git clone --depth 1 -b "xorg-server-21.1.7" "https://gitlab.freedesktop.org/xorg/xserver.git"
+# -b xorg-server-1.20.14
 
 INFO_NewLineAbove "DONE!"
 clear -x
@@ -279,12 +286,13 @@ TITLE "Compiling libxshmfence... (1/8)"
 echo ""
 
 cd $TMP_FOLDER/libxshmfence
-sed -i s/values.h/limits.h/ ./src/xshmfence_futex.h
 
 RM_SILENT $PREFIX/lib/libxshmfence*
 
-./autogen.sh --prefix=$PREFIX --with-shared-memory-dir=$TMPDIR
-make -s -j${CORES} install CPPFLAGS=-DMAXINT=INT_MAX
+./autogen.sh --prefix=$PREFIX --with-shared-memory-dir=$TMPDIR;
+sed -i s/values.h/limits.h/ ./src/xshmfence_futex.h;
+
+make -j${CORES} install CPPFLAGS=-DMAXINT=INT_MAX;
 
 #compile mesa
 # clear -x
@@ -332,7 +340,7 @@ cd $TMP_FOLDER/libepoxy
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
-meson -Dprefix=$PREFIX -Dbuildtype=release -Dglx=yes -Degl=yes -Dtests=false -Dc_args=-U__ANDROID__ ..
+meson -Dprefix=$PREFIX -Dbuildtype=release -Dglx=yes -Degl=yes -Dtests=false -Dc_args="-U__ANDROID__" ..
 
 RM_SILENT $PREFIX/lib/libepoxy*
 
@@ -376,7 +384,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Ddocumentation=false -Dbuildtype=release .
 ninja install
 
 #compile wayland-protocols
-clear -x
+# clear -x
 TITLE "Compiling wayland-protocols... (6/8)"
 echo ""
 
@@ -391,7 +399,7 @@ meson -Dprefix=$PREFIX -Dtests=false -Dbuildtype=release ..
 ninja install
 
 #compile libsha1
-clear -x
+# clear -x
 TITLE "Compiling libsha1... (7/8)"
 echo ""
 
@@ -403,7 +411,7 @@ RM_SILENT $PREFIX/lib/libsha1*
 make -s -j${CORES} install
 
 #compile Xwayland
-clear -x
+# clear -x
 TITLE "Compiling & Patching xserver... (8/8)"
 echo ""
 
@@ -412,9 +420,19 @@ cd $TMP_FOLDER/xserver
 	DIE "xserver patch file not found! Try re-running the script..."
 }
 
-git checkout -f "xorg-server-1.20.14"
+# git checkout -f "xorg-server-1.20.14"
+git checkout -f "xorg-server-21.1.7"
 git apply --reject "$XSERVER_PATCH_FILE"
 
+# FOR NEWER VERSIONS! (Still implementing fixes)
+# MKDIR_NO_ERR include/sys/
+# touch include/sys/kd.h
+# sed -i 's/set[gu]id\(\)/\(int\)/g' os/utils.c
+# MKDIR_NO_ERR b
+# CD_NO_ERR b
+# LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dvendor_name="Mediatek" -Dvendor_name_short="MTK" -Ddri3=true -Dmitshm=true -Dxcsecurity=true -Dxf86bigfont=true -Dxwayland=true -Dxorg=true -Dxnest=true -Dxvfb=true -Dxwin=false -Dxephyr=true -Ddevel-docs=false -Dhal=false -Dudev=false -Ddtrace=false -Dglamor=false -Dglx=true -Dsha1=libsha1 -Dc_args="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0 -Dnolock=i"
+# RM_SILENT $PREFIX/lib/libX*
+# ninja install
 
 [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
 	[ "$ENABLE_DRI3" = "yes" ] && {
@@ -432,13 +450,14 @@ git apply --reject "$XSERVER_PATCH_FILE"
 
 RM_SILENT $PREFIX/lib/libX*
 
+# If you want to use v1.20.14 remove the CFLAGS="" variable
 [ "$USE_XF86BF" = "fix" ] && {
-	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
+	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0"
 } || {
-	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog'
+	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0" CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
 }
 
-clear -x
+# clear -x
 
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
