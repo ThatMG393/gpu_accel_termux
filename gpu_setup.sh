@@ -37,11 +37,7 @@ RM_SILENT() { WARN "Removing: $*"; rm -rf "${*}" &> /dev/null ;:; }
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
 
-CLONE() {
-	repo=$1
-	branch=$2
-	depth=$3
-}
+CLONE() { if [ "$2" = "latest" ]; then git clone -q --depth=$3 "$1"; else git clone -q --depth=$3 -b "$2" "$1"; fi ;:; }
 
 SIG_HANDLER() {
 	clear -x
@@ -257,23 +253,23 @@ INFO_NoNewLineAbove "Cloning repositories..."
 
 INFO_NewLineAbove "Cloning 'mesa'"
 WARN "This repository takes very long to clone, don't panic!"
-git clone --depth 1 -q "https://gitlab.freedesktop.org/mesa/mesa.git"
+CLONE "https://gitlab.freedesktop.org/mesa/mesa.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'virglrenderer'"
-git clone --depth 1 -q "https://gitlab.freedesktop.org/virgl/virglrenderer.git"
+CLONE "https://gitlab.freedesktop.org/virgl/virglrenderer.git" "latest" 1
 
 INFO_NoNewLineAbove "Cloning 'libxshmfence'"
-git clone --depth 1 "https://gitlab.freedesktop.org/xorg/lib/libxshmfence.git"
+CLONE "https://gitlab.freedesktop.org/xorg/lib/libxshmfence.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'libepoxy'"
-git clone --depth 1 -q "https://github.com/anholt/libepoxy.git"
+CLONE "https://github.com/anholt/libepoxy.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'wayland'"
-git clone --depth 1 -q "https://gitlab.freedesktop.org/wayland/wayland.git"
+CLONE "https://gitlab.freedesktop.org/wayland/wayland.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'wayland-protocols'"
-git clone --depth 1 -q "https://gitlab.freedesktop.org/wayland/wayland-protocols.git"
+CLONE "https://gitlab.freedesktop.org/wayland/wayland-protocols.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'libsha1'"
-git clone --depth 1 -q "https://github.com/dottedmag/libsha1.git"
+CLONE "https://github.com/dottedmag/libsha1.git" "latest" 1
 INFO_NoNewLineAbove "Cloning 'xorg-server_v21.1.7'"
-git clone --depth 1 -b "xorg-server-21.1.7" "https://gitlab.freedesktop.org/xorg/xserver.git"
-# -b xorg-server-1.20.14
+CLONE "https://gitlab.freedesktop.org/xorg/xserver.git" "xorg-server-21.1.7" 1
+# xorg-server-1.20.14
 
 INFO_NewLineAbove "DONE!"
 clear -x
@@ -295,7 +291,7 @@ sed -i s/values.h/limits.h/ ./src/xshmfence_futex.h;
 make -j${CORES} install CPPFLAGS=-DMAXINT=INT_MAX;
 
 #compile mesa
-# clear -x
+clear -x
 TITLE "Compiling & Patching mesa... (2/8)"
 WARN "Prepare for LAG!"
 echo ""
@@ -331,7 +327,7 @@ python3 install_megadrivers.py \
 	swrast_dri.so kms_swrast_dri.so zink_dri.so
 
 #compile libepoxy
-# clear -x
+clear -x
 TITLE "Compiling libepoxy... (3/8)"
 echo ""
 
@@ -347,7 +343,7 @@ RM_SILENT $PREFIX/lib/libepoxy*
 ninja install
 
 #compile virglrenderer
-# clear -x
+clear -x
 TITLE "Compiling & Patching virglrenderer... (4/8)"
 echo ""
 
@@ -373,18 +369,19 @@ clear -x
 TITLE "Compiling wayland... (5/8)"
 echo ""
 
-RM_SILENT $PREFIX/lib/libwayland*
-
 cd $TMP_FOLDER/wayland
 
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
 meson -Dprefix=$PREFIX -Dtests=false -Ddocumentation=false -Dbuildtype=release ..
+
+RM_SILENT $PREFIX/lib/libwayland*
+
 ninja install
 
 #compile wayland-protocols
-# clear -x
+clear -x
 TITLE "Compiling wayland-protocols... (6/8)"
 echo ""
 
@@ -399,19 +396,20 @@ meson -Dprefix=$PREFIX -Dtests=false -Dbuildtype=release ..
 ninja install
 
 #compile libsha1
-# clear -x
+clear -x
 TITLE "Compiling libsha1... (7/8)"
 echo ""
 
 cd $TMP_FOLDER/libsha1
 
+./autogen.sh --prefix=$PREFIX
+
 RM_SILENT $PREFIX/lib/libsha1*
 
-./autogen.sh --prefix=$PREFIX
 make -s -j${CORES} install
 
 #compile Xwayland
-# clear -x
+clear -x
 TITLE "Compiling & Patching xserver... (8/8)"
 echo ""
 
@@ -450,20 +448,19 @@ git apply --reject "$XSERVER_PATCH_FILE"
 
 RM_SILENT $PREFIX/lib/libX*
 
-# If you want to use v1.20.14 remove the CFLAGS="" variable
 [ "$USE_XF86BF" = "fix" ] && {
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0"
 } || {
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0" CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
 }
 
-# clear -x
+clear -x
 
 TITLE "DONE!"
 INFO_NewLineAbove "Build success!"
 
 INFO_NewLineAbove "Termux-X11 is recommended when using this!"
-WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa, virglrenderer }"
+WARN "Please, please, please dont upgrade any of this { xwayland, libwayland, libwayland-protocols, mesa, virglrenderer, xorg-server }"
 WARN "Or you will encounter weird issues."
 WARN "A recompile should fix the issue (not so sure)"
 
