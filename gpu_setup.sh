@@ -3,7 +3,7 @@
 # █▄█ █▀▀ █▄█     █▀█ █▄▄ █▄▄ ██▄ █▄▄    ▀▄ █▄█ ▄█ █ █░▀█ █▄█    █▄ █ █░▀█ █░█ ▄▀
 #
 # AUTOMATED BY Thundersnow#7929, ThatMG393
-# PATCHES MADE BY Thundersnow#7929
+# PATCHES MADE BY Thundersnow#7929, Twaik Yont (https://github.com/Twaik)
 
 export DISPLAY=:0
 export XDG_RUNTIME_DIR="$PREFIX/tmp"
@@ -146,7 +146,7 @@ VIRGL_DIFF_FILE_SHA="dc9e29ca724833c7d7a1f9d1c5f32eb0d9e998aa7ae7f6656580af20509
 # https://github.com/termux/termux-packages/issues/14517#issuecomment-1460322675
 VIRGL_PATCH_FILE="$MAIN_FOLDER/virglrenderer.patch"
 VIRGL_PATCH_FILE_SHA="4416db69f777c7b5cb95c1381ab094787d101351643c48935bb9f771bfc944c9"
-# Thanks to Twaik Yont for letting me use his patch!
+# Huge thanks to Twaik Yont for posting this patch!
 # https://github.com/Twaik
 
 INFO_NewLineAbove "Checking for patches and diff files..."
