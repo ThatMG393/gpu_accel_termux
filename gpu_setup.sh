@@ -19,7 +19,7 @@ USE_XF86BF="fix"
 
 # Possible values can only be 'yes' and 'no'
 # Putting another values will just disable the DRI3 feature
-ENABLE_DRI3="no"
+ENABLE_DRI3="yes"
 
 # Utils / Helpers
 # Yoink from UDroid
@@ -35,7 +35,7 @@ TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
 [ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
-RM_SILENT() { WARN "Removing: $*"; rm -rf "${*}" &> /dev/null ;:; }
+RM_SILENT() { WARN "Removing: $*"; rm -rf "$*" &> /dev/null ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
@@ -48,6 +48,15 @@ SIG_HANDLER() {
 }
 
 trap 'SIG_HANDLER' TERM HUP
+
+ERR_LOGS="\nLogs:\n"
+
+ERR_HANDLER() {
+	WARN "Uh oh, something terrible has gone wrong!"
+	ERR_LOGS+="Line ${1} exited with code ${2}\n"
+}
+
+trap 'ERR_HANDLER $LINENO $?' ERR
 
 MAIN_FOLDER="$HOME/gpu_accel"
 MKDIR_NO_ERR "$MAIN_FOLDER"
@@ -130,7 +139,7 @@ else
 fi
 
 PATCHES_TAR_GZ="$MAIN_FOLDER/patches.tar.gz"
-PATCHES_TAR_GZ_SHA="8d91834d03a16075ce2f45751636f0f2118f99cfa913ceb2d692986a10b4a679"
+PATCHES_TAR_GZ_SHA="0b13a976380508059653dc13a7dfea0b4aef60f0ac6097f6a434f19b3f5851a0"
 
 # Source:
 # Thundersnow#7929
@@ -138,27 +147,25 @@ MESA_PATCH_FILE="$MAIN_FOLDER/mesa20230212.patch"
 MESA_PATCH_FILE_SHA="2f8ce934cb595e7988b9a742754b4ea54335b35451caa143ffd81332a1816c66"
 XSERVER_PATCH_FILE="$MAIN_FOLDER/xserver.patch"
 XSERVER_PATCH_FILE_SHA="bc4612d0d80876af4bbbec5270e89f80eef4a3068f6ff25f82c97da7098d3698"
-VIRGL_DIFF_FILE="$MAIN_FOLDER/virglrenderer.diff"
-VIRGL_DIFF_FILE_SHA="dc9e29ca724833c7d7a1f9d1c5f32eb0d9e998aa7ae7f6656580af20509aa38f"
-# -------
+# ------
 
 # Source:
-# https://github.com/termux/termux-packages/issues/14517#issuecomment-1460322675
-VIRGL_PATCH_FILE="$MAIN_FOLDER/virglrenderer.patch"
-VIRGL_PATCH_FILE_SHA="4416db69f777c7b5cb95c1381ab094787d101351643c48935bb9f771bfc944c9"
-# Huge thanks to Twaik Yont for posting this patch!
-# https://github.com/Twaik
+# https://github.com/termux/termux-packages/tree/master/x11-packages/virglrenderer-android
+VIRGL_DIFF_FILE="$MAIN_FOLDER/virglrenderer.diff"
+VIRGL_DIFF_FILE_SHA="366d83efcbfcdbdc2744c4648d4c74d1a0f50b7669f589d9c1beb2d5e5f6215a"
+# -------
+
 
 INFO_NewLineAbove "Checking for patches and diff files..."
 
 INFO_NewLineAbove "Check for file existence..."
-if [[ ! -f "$MESA_PATCH_FILE" || ! -f "$XSERVER_PATCH_FILE" || ! -f "$VIRGL_DIFF_FILE" || ! -f "$VIRGL_PATCH_FILE" ]]; then
+if [[ ! -f "$MESA_PATCH_FILE" || ! -f "$XSERVER_PATCH_FILE" || ! -f "$VIRGL_DIFF_FILE" ]]; then
 	WARN "Files doesn't exists!"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" "$VIRGL_PATCH_FILE"
+	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE"
 	
 	CD_NO_ERR "$MAIN_FOLDER"
 	
@@ -187,13 +194,13 @@ else
 fi
 
 INFO_NewLineAbove "Checking for checksum..."
-if [[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_PATCH_FILE" | cut -d' ' -f1)" != "$VIRGL_PATCH_FILE_SHA" ]]; then
+if [[ "$(sha256sum "$PATCHES_TAR_GZ" | cut -d' ' -f1)" != "$PATCHES_TAR_GZ_SHA" ]] || [[ "$(sha256sum "$MESA_PATCH_FILE" | cut -d' ' -f1)" != "$MESA_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$XSERVER_PATCH_FILE" | cut -d' ' -f1)" != "$XSERVER_PATCH_FILE_SHA" ]] || [[ "$(sha256sum "$VIRGL_DIFF_FILE" | cut -d' ' -f1)" != "$VIRGL_DIFF_FILE_SHA" ]]; then
 	WARN "Checksum check failed! Re-installing"
 
 	INFO_NewLineAbove "Fetching & Extracting 'patches.tar.gz'"
 	WARN "This might take a while..."
 	
-	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE" "$VIRGL_PATCH_FILE"
+	RM_SILENT "$PATCHES_TAR_GZ" "$MESA_PATCH_FILE" "$XSERVER_PATCH_FILE" "$VIRGL_DIFF_FILE"
 	
 	CD_NO_ERR "$MAIN_FOLDER"
 
@@ -379,12 +386,6 @@ git checkout -f master
 }
 git apply "$VIRGL_DIFF_FILE"
 
-if [ ! -f "$VIRGL_PATCH_FILE" ]; then
-	WARN "VirGL patch file not found! Try re-running the script..."
-else
-	git apply "$VIRGL_PATCH_FILE"
-fi
-
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
@@ -469,12 +470,12 @@ if [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]]; then
 		./autogen.sh --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 	fi
 else
-	if [ "$ENABLE_DRI3" = "yes" ]; else
+	if [ "$ENABLE_DRI3" = "yes" ]; then
 		./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 	else
 		./autogen.sh --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
 	fi
-}
+fi
 
 RM_SILENT $PREFIX/lib/libX*
 
@@ -495,5 +496,7 @@ WARN "Or you will encounter weird issues."
 WARN "A recompile should fix the issue (not so sure)"
 
 INFO_NewLineAbove "Script signing off..."
+
+WARN $ERR_LOGS
 
 exit 0
