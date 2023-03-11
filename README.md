@@ -1,3 +1,5 @@
+A new package has been uploaded in the Termux tur-repo! It might be a replacement to this! [Conversation](https://github.com/termux/termux-packages/issues/14517)
+
 # GPU_Accel_Termux
 GPU Acceleration using some patches that is based on Mesa-Turnip-KGSL
 
