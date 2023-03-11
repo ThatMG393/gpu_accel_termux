@@ -330,11 +330,11 @@ git apply --reject "$MESA_PATCH_FILE"
 MKDIR_NO_ERR b
 CD_NO_ERR b
 
-[ "$ENABLE_DRI3" = "yes" ] && {
+if [ "$ENABLE_DRI3" = "yes" ]; then
 	LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Ddri3=true -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
-} || {
+else
 	LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
-}
+fi
 
 RM_SILENT $PREFIX/lib/libglapi*
 RM_SILENT $PREFIX/lib/libGL*
@@ -379,11 +379,11 @@ git checkout -f master
 }
 git apply "$VIRGL_DIFF_FILE"
 
-[ ! -f "$VIRGL_PATCH_FILE" ] && {
+if [ ! -f "$VIRGL_PATCH_FILE" ]; then
 	WARN "VirGL patch file not found! Try re-running the script..."
-} || {
+else
 	git apply "$VIRGL_PATCH_FILE"
-}
+fi
 
 MKDIR_NO_ERR b
 CD_NO_ERR b
@@ -462,27 +462,27 @@ git apply --reject "$XSERVER_PATCH_FILE"
 # RM_SILENT $PREFIX/lib/libX*
 # ninja install
 
-[[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]] && {
-	[ "$ENABLE_DRI3" = "yes" ] && {
+if [[ "$USE_XF86BF" = "enable" || "$USE_XF86BF" = "fix" ]]; then
+	if [ "$ENABLE_DRI3" = "yes" ]; then
 		./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
-	} || {
+	else
 		./autogen.sh --enable-mitshm --enable-xcsecurity --enable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
-	}
-} || {
-	[ "$ENABLE_DRI3" = "yes" ] && {
+	fi
+else
+	if [ "$ENABLE_DRI3" = "yes" ]; else
 		./autogen.sh --enable-dri3 --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
-	} || {
+	else
 		./autogen.sh --enable-mitshm --enable-xcsecurity --disable-xf86bigfont --enable-xwayland --enable-xorg --enable-xnest --enable-xvfb --disable-xwin --enable-xephyr --enable-kdrive --disable-devel-docs --disable-config-hal --disable-config-udev --disable-unit-tests --disable-selective-werror --disable-static --without-dtrace --disable-glamor --enable-glx --with-sha1=libsha1 --with-pic --prefix=$PREFIX
-	}
+	fi
 }
 
 RM_SILENT $PREFIX/lib/libX*
 
-[ "$USE_XF86BF" = "fix" ] && {
+if [ "$USE_XF86BF" = "fix" ]; then
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0"
-} || {
+else
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0" CPPFLAGS=-DSHMLBA=4096 # CHANGE THIS IF CRASHING OR SMTH
-}
+fi
 
 clear -x
 
