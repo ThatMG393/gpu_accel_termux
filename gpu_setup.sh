@@ -35,7 +35,7 @@ TITLE() { echo -e "\e[100m${*}\e[0m";:; }
 
 [ -d "/usr" ] && DIE "Building inside a proot is not supported!"
 
-RM_SILENT() { WARN "Removing: $*"; rm -rf "$*" &> /dev/null ;:; }
+RM_SILENT() { WARN "Removing: $*"; rm -rf $* &> /dev/null ;:; }
 
 MKDIR_NO_ERR() { if [ ! -d $1 ]; then mkdir -p $1; else WARN "Directory '$1' already exists!"; fi ;:; } 
 CD_NO_ERR() { if [ ! -d $1 ]; then MKDIR_NO_ERR $1; fi; cd $1 ;:; } 
