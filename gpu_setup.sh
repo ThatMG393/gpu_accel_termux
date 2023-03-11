@@ -240,7 +240,7 @@ INFO_NoNewLineAbove "Installing build systems & binaries"
 pkg install \
 		clang lld binutils \
 		cmake autoconf automake libtool \
-		ndk-sysroot ndk-stl ndk-multilib \
+		ndk-sysroot ndk-multilib \
 		make python python-pip git \
 		libandroid-shmem-static \
 		vulkan-tools vulkan-headers vulkan-loader-android\
