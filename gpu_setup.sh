@@ -139,7 +139,7 @@ else
 fi
 
 PATCHES_TAR_GZ="$MAIN_FOLDER/patches.tar.gz"
-PATCHES_TAR_GZ_SHA="0b13a976380508059653dc13a7dfea0b4aef60f0ac6097f6a434f19b3f5851a0"
+PATCHES_TAR_GZ_SHA="340578182408ff50d9e23e104513892690325de29fc1ebf901d03e42f8c04ff5"
 
 # Source:
 # Thundersnow#7929
@@ -152,7 +152,7 @@ XSERVER_PATCH_FILE_SHA="bc4612d0d80876af4bbbec5270e89f80eef4a3068f6ff25f82c97da7
 # Source:
 # https://github.com/termux/termux-packages/tree/master/x11-packages/virglrenderer-android
 VIRGL_DIFF_FILE="$MAIN_FOLDER/virglrenderer.diff"
-VIRGL_DIFF_FILE_SHA="366d83efcbfcdbdc2744c4648d4c74d1a0f50b7669f589d9c1beb2d5e5f6215a"
+VIRGL_DIFF_FILE_SHA="dc9e29ca724833c7d7a1f9d1c5f32eb0d9e998aa7ae7f6656580af20509aa38f"
 # -------
 
 
