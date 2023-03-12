@@ -343,10 +343,10 @@ else
 	LDFLAGS='-l:libandroid-shmem.a -llog' meson .. -Dprefix=$PREFIX -Dplatforms=x11 -Dgbm=enabled -Dgallium-drivers=zink,swrast -Dllvm=enabled -Dvulkan-drivers='' -Dcpp_rtti=false -Dc_args=-Wno-error=incompatible-function-pointer-types -Dbuildtype=release
 fi
 
-RM_SILENT $PREFIX/lib/libglapi*
-RM_SILENT $PREFIX/lib/libGL*
-RM_SILENT $PREFIX/lib/libEGL*
-RM_SILENT $PREFIX/lib/libgbm*
+# RM_SILENT $PREFIX/lib/libglapi*
+# RM_SILENT $PREFIX/lib/libGL*
+# RM_SILENT $PREFIX/lib/libEGL*
+# RM_SILENT $PREFIX/lib/libgbm*
 # RM_SILENT $PREFIX/lib/dri
 
 ninja install
@@ -407,7 +407,7 @@ CD_NO_ERR b
 
 meson -Dprefix=$PREFIX -Dtests=false -Ddocumentation=false -Dbuildtype=release ..
 
-RM_SILENT $PREFIX/lib/libwayland*
+# RM_SILENT $PREFIX/lib/libwayland*
 
 ninja install
 
@@ -477,7 +477,7 @@ else
 	fi
 fi
 
-RM_SILENT $PREFIX/lib/libX*
+# RM_SILENT $PREFIX/lib/libX*
 
 if [ "$USE_XF86BF" = "fix" ]; then
 	make -s -j${CORES} install LDFLAGS='-fuse-ld=lld /data/data/com.termux/files/usr/lib/libandroid-shmem.a -llog' CFLAGS="-DKDSETMODE=0 -DKDSKBMODE=0 -DKD_TEXT=0 -DK_OFF=0 -DKD_GRAPHICS=0 -DKDGKBMODE=0 -DK_RAW=0"
